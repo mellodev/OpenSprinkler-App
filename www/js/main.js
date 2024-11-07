@@ -1261,14 +1261,15 @@ function fixPasswordHash( current ) {
 }
 
 // Add a new site
-function submitNewUser( ssl, useAuth ) {
+function submitNewSite( ssl, useAuth ) {
 	document.activeElement.blur();
 	$.mobile.loading( "show" );
 
 	var connectionType = $( ".connection-type input[type='radio']:checked" ).val(),
-		ip = $.mobile.path.parseUrl( $( "#os_ip" ).val() ).hrefNoHash.replace( /https?:\/\//, "" ),
+		osUrl = $.mobile.path.parseUrl( $( "#os_url" ).val() ).hrefNoHash, // mellodev delete: .replace( /https?:\/\//, "" ),
 		token = connectionType === "token" ? $( "#os_token" ).val() : null,
 		success = function( data, sites ) {
+			console.log("*** submitNewSite.success", {data, sites});
 			$.mobile.loading( "hide" );
 			var is183;
 
@@ -1287,7 +1288,10 @@ function submitNewUser( ssl, useAuth ) {
 
 				sites[ name ] = {};
 				sites[ name ].os_token = currToken = token;
-				sites[ name ].os_ip = currIp = ip;
+				// sites[ name ].os_ip = currIp = osUrl;
+				sites[ name ].os_url = osUrl; // mellodev delete this: $.mobile.path.parseUrl( $( "#os_ip" ).val() ).hrefNoHash;
+				sites[ name ].ssl = osUrl.includes("https://") ? 1 : 0;
+				// mellodev remove os_ip and other IP related stuff here
 
 				if ( typeof data.fwv === "number" && data.fwv >= 213 ) {
 					if ( typeof data.wl === "number" ) {
@@ -1298,12 +1302,13 @@ function submitNewUser( ssl, useAuth ) {
 				sites[ name ].os_pw = savePW ? pw : "";
 				currPass = pw;
 
-				if ( ssl ) {
-					sites[ name ].ssl = "1";
-					currPrefix = "https://";
-				} else {
-					currPrefix = "http://";
-				}
+				// mellodev delete this
+				// if ( ssl ) {
+				// 	sites[ name ].ssl = "1";
+				// 	currPrefix = "https://";
+				// } else {
+				// 	currPrefix = "http://";
+				// }
 
 				if ( useAuth ) {
 					sites[ name ].auth_user = $( "#os_auth_user" ).val();
@@ -1320,7 +1325,9 @@ function submitNewUser( ssl, useAuth ) {
 					curr183 = true;
 				}
 
-				$( "#os_name,#os_ip,#os_pw,#os_auth_user,#os_auth_pw,#os_token" ).val( "" );
+				console.log("*** submitNewSite.success storing sites!", {s: sites[ name ], sites});
+
+				$( "#os_name,#os_url,#os_pw,#os_auth_user,#os_auth_pw,#os_token" ).val( "" );
 				storage.set( {
 					"sites": JSON.stringify( sites ),
 					"current_site": name
@@ -1330,24 +1337,25 @@ function submitNewUser( ssl, useAuth ) {
 					newLoad();
 				} );
 			} else {
-				showerror( _( "Check IP/Port and try again." ) );
+				showerror( _( "success Check IP/Port and try again." ) );
 			}
 		},
 		fail = function( x ) {
+			console.log("*** submitNewSite.fail", {x, useAuth, ssl});
 			if ( !useAuth && x.status === 401 ) {
 				getAuth();
 				return;
 			}
 			if ( ssl ) {
 				$.mobile.loading( "hide" );
-				showerror( _( "Check IP/Port and try again." ) );
+				showerror( _( "fail Check IP/Port and try again." ) );
 			} else {
-				submitNewUser( true );
+				submitNewSite( true );
 			}
 		},
 		getAuth = function() {
 			if ( $( "#addnew-auth" ).length ) {
-				submitNewUser( ssl, true );
+				submitNewSite( ssl, true );
 			} else {
 				showAuth();
 			}
@@ -1371,19 +1379,20 @@ function submitNewUser( ssl, useAuth ) {
 				"</div>" ).enhanceWithin();
 
 			html.on( "submit", "form", function() {
-				submitNewUser( ssl, true );
+				submitNewSite( ssl, true );
 				return false;
 			} );
 
 			$( "#addnew-content" ).hide();
 			$( "#addnew" ).append( html ).popup( "reposition", { positionTo:"window" } );
-		},
-		prefix;
+		};
+		// mellodev delete this: ,prefix;
 
-	if ( !ip && !token ) {
-		showerror( _( "An IP address or token is required to continue." ) );
-		return;
-	}
+	// mellodev refactor this validation
+	// if ( !ip && !token ) {
+	// 	showerror( _( "An IP address or token is required to continue." ) );
+	// 	return;
+	// }
 
 	if ( token && token.length !== 32 ) {
 		showerror( _( "OpenThings Token must be 32 characters long." ) );
@@ -1395,15 +1404,17 @@ function submitNewUser( ssl, useAuth ) {
 		return;
 	}
 
-	if ( $( "#os_usessl" ).is( ":checked" ) === true ) {
-		ssl = true;
-	}
+	// mellodev delete this
+	// if ( $( "#os_usessl" ).is( ":checked" ) === true ) {
+	// 	ssl = true;
+	// }
 
-	if ( ssl ) {
-		prefix = "https://";
-	} else {
-		prefix = "http://";
-	}
+	// mellodev delete this
+	// if ( ssl ) {
+	// 	prefix = "https://";
+	// } else {
+	// 	prefix = "http://";
+	// }
 
 	if ( useAuth ) {
 		$( "#addnew-auth" ).hide();
@@ -1412,8 +1423,9 @@ function submitNewUser( ssl, useAuth ) {
 	}
 
 	var urlDest = "/jo?pw=" + md5( $( "#os_pw" ).val() ),
-		url = token ? "https://cloud.openthings.io/forward/v1/" + token + urlDest : prefix + ip + urlDest;
+		url = token ? "https://cloud.openthings.io/forward/v1/" + token + urlDest : osUrl + urlDest;
 
+		console.log("*** submitNewSite", {urlDest, url, osUrl});
 	//Submit form data to the server
 	$.ajax( {
 		url: url,
@@ -1435,7 +1447,7 @@ function submitNewUser( ssl, useAuth ) {
 				return;
 			}
 			$.ajax( {
-				url: token ? "https://cloud.openthings.io/forward/v1/" + token : prefix + ip,
+				url: token ? "https://cloud.openthings.io/forward/v1/" + token : osUrl,
 				type: "GET",
 				dataType: "text",
 				timeout: 10000,
@@ -1499,7 +1511,9 @@ function showSiteSelect( list ) {
 
 function showAddNew( autoIP, closeOld ) {
 	$( "#addnew" ).popup( "destroy" ).remove();
-
+	// mellodev this is add new site modal
+	// investigate what autoIP is, that needs to migrate to a URL now
+	// os_ip is now os_url with proto
 	var isAuto = ( autoIP ) ? true : false,
 		addnew = $( "<div data-role='popup' id='addnew' data-theme='a' data-overlay-theme='b'>" +
 			"<div data-role='header' data-theme='b'>" +
@@ -1523,11 +1537,11 @@ function showAddNew( autoIP, closeOld ) {
 								"<label for='type-token'>" + _( "OpenThings Cloud" ) + "</label>" +
 							"</fieldset>" +
 						"</div>" +
-						"<label class='ip-field' for='os_ip'>" + _( "Open Sprinkler IP:" ) + "</label>" ) +
+						"<label class='ip-field' for='os_url'>" + _( "Open Sprinkler URL:" ) + "</label>" ) +
 					"<input data-wrapper-class='ip-field' " + ( isAuto ? "data-role='none' style='display:none' " : "" ) +
 						"autocomplete='off' autocorrect='off' autocapitalize='off' " +
-						"spellcheck='false' type='url' pattern='' name='os_ip' id='os_ip' " +
-						"value='" + ( isAuto ? autoIP : "" ) + "' placeholder='home.dyndns.org'>" +
+						"spellcheck='false' type='url' pattern='' name='os_url' id='os_url' " +
+						"value='" + ( isAuto ? autoIP : "" ) + "' placeholder='http://192.168.0.1:80'>" +
 					"<label class='token-field' for='os_token' style='display: none'>" + _( "OpenThings Token" ) + ":</label>" +
 					"<input data-wrapper-class='token-field hidden' " +
 						"autocomplete='off' autocorrect='off' autocapitalize='off' " +
@@ -1543,8 +1557,9 @@ function showAddNew( autoIP, closeOld ) {
 							"<h4>" + _( "Advanced" ) + "</h4>" +
 							"<fieldset data-role='controlgroup' data-type='horizontal' " +
 								"data-mini='true' class='center'>" +
-							"<input type='checkbox' name='os_usessl' id='os_usessl'>" +
-							"<label for='os_usessl'>" + _( "Use SSL" ) + "</label>" +
+							// mellodev delete
+							// "<input type='checkbox' name='os_usessl' id='os_usessl'>" +
+							// "<label for='os_usessl'>" + _( "Use SSL" ) + "</label>" +
 							"<input type='checkbox' name='os_useauth' id='os_useauth'>" +
 							"<label for='os_useauth'>" + _( "Use Auth" ) + "</label>" +
 							"</fieldset>" +
@@ -1555,7 +1570,7 @@ function showAddNew( autoIP, closeOld ) {
 		"</div>" );
 
 	addnew.find( "form" ).on( "submit", function() {
-		submitNewUser();
+		submitNewSite();
 		return false;
 	} );
 
@@ -1694,6 +1709,17 @@ var showSites = ( function() {
 
 					a = htmlEscape( a );
 
+					// Migrate IP based sites to URL based
+					var osUrl = b.os_url;
+					var needsMigration = false;
+					if ( !osUrl && b.os_ip ){
+						osUrl = ( b.ssl ? "https://" : "http://" ) + b.os_ip;
+						needsMigration = true;
+					}
+					// mellodev site edit form is here
+					// var osUseSSL = osUrl?.includes("https://");
+					// console.log("*** site", {b, osUrl, osUseSSL});
+
 					list += "<fieldset " + ( ( total === 1 ) ? "data-collapsed='false'" : "" ) + " id='site-" + i + "' data-role='collapsible'>" +
 						"<h3>" +
 							"<a class='ui-btn ui-btn-corner-all connectnow yellow' data-site='" + i + "' href='#'>" +
@@ -1705,7 +1731,7 @@ var showSites = ( function() {
 								"<label for='cnm-" + i + "'>" + _( "Change Name" ) + "</label><input id='cnm-" + i + "' type='text' value='" + a + "'>" +
 							"</div>" +
 							( b.os_token ? "" : "<div class='ui-field-contain'>" +
-								"<label for='cip-" + i + "'>" + _( "Change IP" ) + "</label><input id='cip-" + i + "' type='url' value='" + b.os_ip +
+								"<label for='cip-" + i + "'>" + _( "Change URL" ) + "</label><input id='curl-" + i + "' type='url' value='" + osUrl  +
 									"' autocomplete='off' autocorrect='off' autocapitalize='off' pattern='' spellcheck='false'>" +
 							"</div>" ) +
 							( b.os_token ? "<div class='ui-field-contain'>" +
@@ -1722,11 +1748,12 @@ var showSites = ( function() {
 										_( "These options are only for an OpenSprinkler behind a proxy capable of SSL and/or Basic Authentication." ) +
 										"' class='collapsible-button-right help-icon btn-no-border ui-btn ui-icon-info ui-btn-icon-notext'></button>" +
 								"</h3>" +
-								"<label for='usessl-" + i + "'>" +
-									"<input data-mini='true' type='checkbox' id='usessl-" + i + "' name='usessl-" + i + "'" +
-										( typeof b.ssl !== "undefined" && b.ssl === "1" ? " checked='checked'" : "" ) + ">" +
-									_( "Use SSL" ) +
-								"</label>" +
+								// mellodev delete
+								// "<label for='usessl-" + i + "'>" +
+								// 	"<input data-mini='true' type='checkbox' disabled='true' id='usessl-" + i + "' name='usessl-" + i + "'" +
+								// 		( osUseSSL ? " checked='checked'" : "" ) + ">" +
+								// 	_( "Use SSL" ) +
+								// "</label>" +
 								"<label for='useauth-" + i + "'>" +
 									"<input class='useauth' data-user='" + b.auth_user + "' data-pw='" + b.auth_pw +
 										"' data-mini='true' type='checkbox' id='useauth-" + i + "' name='useauth-" + i + "'" +
