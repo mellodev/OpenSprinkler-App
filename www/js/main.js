@@ -1919,7 +1919,7 @@ var showSites = ( function() {
 		} );
 	}
 
-	function begin() {
+	return ( function () {
 		header = changeHeader( {
 			title: _( "Manage Sites" ),
 			animate: isControllerConnected() ? true : false,
@@ -1958,9 +1958,7 @@ var showSites = ( function() {
 
 		$( "#site-control" ).remove();
 		$.mobile.pageContainer.append( page );
-	}
-
-	return begin;
+	} );
 } )();
 
 function addSyncStatus( token ) {
@@ -3664,7 +3662,7 @@ function bindPanel() {
 
 		$( "html" ).on( "datarefresh",  updateButtons );
 
-		function begin() {
+		return ( function () {
 			var currPage = $( ".ui-page-active" ).attr( "id" );
 
 			if ( currPage === "start" || currPage === "loadingPage" || !isControllerConnected() || $( ".ui-page-active" ).length !== 1 ) {
@@ -3673,9 +3671,7 @@ function bindPanel() {
 
 			updateButtons();
 			panel.panel( "open" );
-		}
-
-		return begin;
+		} );
 	} )();
 }
 
@@ -5360,7 +5356,7 @@ var showHomeMenu = ( function() {
 		"</div>" );
 	}
 
-	function begin( btn ) {
+	return ( function ( btn ) {
 		btn = btn instanceof $ ? btn : $( btn );
 
 		$( ".ui-popup-active" ).find( "[data-role='popup']" ).popup( "close" );
@@ -5405,9 +5401,7 @@ var showHomeMenu = ( function() {
 		openPopup( popup, { positionTo: btn } );
 
 		btn.hide();
-	}
-
-	return begin;
+	} );
 } )();
 
 var showHome = ( function() {
@@ -6381,7 +6375,7 @@ var showHome = ( function() {
 		$( "html" ).on( "datarefresh", updateContent );
 	} );
 
-	function begin( firstLoad ) {
+	return ( function ( firstLoad ) {
 		if ( !isControllerConnected() ) {
 			return false;
 		}
@@ -6544,9 +6538,7 @@ var showHome = ( function() {
 		if ( !$.isEmptyObject( weather ) ) {
 			updateWeatherBox();
 		}
-	}
-
-	return begin;
+	} );
 } )();
 
 var showStart = ( function() {
@@ -6620,7 +6612,7 @@ var showStart = ( function() {
 		page.detach();
 	} );
 
-	function begin() {
+	return ( function () {
 		if ( isControllerConnected() ) {
 			return false;
 		}
@@ -6630,9 +6622,7 @@ var showStart = ( function() {
 		$.mobile.pageContainer.append( page );
 
 		checkAutoScan();
-	}
-
-	return begin;
+	} );
 } )();
 
 function showGuidedSetup() {
@@ -7196,7 +7186,7 @@ var getManual = ( function() {
 
 	page.find( "#mmm" ).on( "change", flipSwitched );
 
-	function begin() {
+	return ( function () {
 		var list = "<li data-role='list-divider' data-theme='a'>" + _( "Sprinkler Stations" ) + "</li>";
 
 		page.find( "#mmm" ).prop( "checked", controller.settings.mm ? true : false );
@@ -7228,9 +7218,7 @@ var getManual = ( function() {
 
 		$( "#manual" ).remove();
 		$.mobile.pageContainer.append( page );
-	}
-
-	return begin;
+	} );
 } )();
 
 // Runonce functions
@@ -7271,7 +7259,7 @@ var getRunonce = ( function() {
 		page.detach();
 	} );
 
-	function begin() {
+	return ( function () {
 		list = "<p class='center'>" + _( "Zero value excludes the station from the run-once program." ) + "</p>";
 		progs = [];
 		if ( controller.programs.pd.length ) {
@@ -7411,9 +7399,7 @@ var getRunonce = ( function() {
 
 		$( "#runonce" ).remove();
 		$.mobile.pageContainer.append( page );
-	}
-
-	return begin;
+	} );
 } )();
 
 function submitRunonce( runonce ) {
@@ -8311,7 +8297,7 @@ var getPreview = ( function() {
 
 	};
 
-	function begin() {
+	return ( function () {
 		is21 = checkOSVersion( 210 );
 		is211 = checkOSVersion( 211 );
 		is216 = checkOSVersion( 216 );
@@ -8335,9 +8321,7 @@ var getPreview = ( function() {
 
 		$( "#preview" ).remove();
 		$.mobile.pageContainer.append( page );
-	}
-
-	return begin;
+	} );
 } )();
 
 function getStationDuration( duration, date ) {
@@ -8869,7 +8853,7 @@ var getLogs = ( function() {
 	page.find( "#log_timeline" ).prop( "checked", !isNarrow );
 	page.find( "#log_table" ).prop( "checked", isNarrow );
 
-	function begin() {
+	return ( function () {
 		var additionalMetrics = checkOSVersion( 219 ) ? [
 			controller.options.sn1t === 3 ? _( "Soil Sensor" ) : _( "Rain Sensor" ),
 			controller.options.sn2t === 3 ? _( "Soil Sensor" ) : _( "Rain Sensor" ),
@@ -8902,9 +8886,7 @@ var getLogs = ( function() {
 
 		$( "#logs" ).remove();
 		$.mobile.pageContainer.append( page );
-	}
-
-	return begin;
+	} );
 } )();
 
 function clearLogs( callback ) {
@@ -9046,7 +9028,7 @@ var getPrograms = ( function() {
 		page.find( "#programs_list" ).html( list.enhanceWithin() );
 	}
 
-	function begin( pid ) {
+	return ( function ( pid ) {
 		expandId = pid;
 
 		changeHeader( {
@@ -9073,9 +9055,7 @@ var getPrograms = ( function() {
 
 		$( "#programs" ).remove();
 		$.mobile.pageContainer.append( page );
-	}
-
-	return begin;
+	} );
 } )();
 
 function expandProgram( program ) {
@@ -10604,7 +10584,7 @@ var showAbout = ( function() {
 		"</div>" ),
 		showHardware;
 
-	function begin() {
+	return ( function () {
 		showHardware = typeof controller.options.hwv !== "undefined" ? false : true;
 		page.find( ".hardware" ).toggleClass( "hidden", showHardware ).text( getHWVersion() + getHWType() );
 		page.find( ".hardwareLabel" ).toggleClass( "hidden", showHardware );
@@ -10627,9 +10607,7 @@ var showAbout = ( function() {
 
 		$( "#about" ).remove();
 		$.mobile.pageContainer.append( page );
-	}
-
-	return begin;
+	} );
 } )();
 
 function stopStations( callback ) {
