@@ -8953,7 +8953,7 @@ var getPrograms = ( function() {
 		expandId;
 
 	page
-	.on( "programrefresh", updateContent )
+	.on( "programrefresh", updateContentPrograms )
 	.on( "pagehide", function() {
 		page.detach();
 	} )
@@ -8970,7 +8970,7 @@ var getPrograms = ( function() {
 		}
 	} );
 
-	function updateContent() {
+	function updateContentPrograms() {
 		var list = $( makeAllPrograms() );
 
 		list.find( "[id^=program-]" ).on( {
@@ -9051,7 +9051,7 @@ var getPrograms = ( function() {
 
 		} );
 
-		updateContent();
+		updateContentPrograms();
 
 		$( "#programs" ).remove();
 		$.mobile.pageContainer.append( page );
