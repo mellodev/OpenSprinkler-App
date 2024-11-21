@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-var DEFAULT_WEATHER_SERVER_URL = "https://weather.opensprinkler.com";
-var WEATHER_SERVER_URL = DEFAULT_WEATHER_SERVER_URL;
+// Modules
+let OSWeather = OSWeather || {};
 
 // Initialize global variables
 var isAndroid = /Android|\bSilk\b/.test( navigator.userAgent ),
@@ -308,7 +308,7 @@ $( document )
 	// Indicate the weather and device status are being updated
 	showLoading( "#weather,#footer-running" );
 
-	updateController( updateWeather, networkFail );
+	updateController( OSWeather.updateWeather, networkFail );
 } )
 .on( "pause", function() {
 
@@ -741,7 +741,7 @@ function networkFail() {
 		function() {
 			showLoading( "#weather,#footer-running" );
 			refreshStatus();
-			updateWeather();
+			OSWeather.updateWeather();
 		}
 	);
 }
@@ -792,7 +792,7 @@ function newLoad() {
 				changePassword = $( ".changePassword" );
 
 			$.mobile.loading( "hide" );
-			checkURLandUpdateWeather();
+			OSWeather.checkURLandUpdateWeather();
 
 			if ( checkOSVersion( 210 ) ) {
 				weatherAdjust.css( "display", "" );
@@ -2681,296 +2681,6 @@ function showMonthlyAdjustmentOptions( button, callback ) {
 	openPopup( popup, { positionTo: "window" } );
 }
 
-// Validates a Weather Underground location to verify it contains the data needed for Weather Adjustments
-function validateWULocation( location, callback ) {
-	if ( !controller.settings.wto || typeof controller.settings.wto.key !== "string" || controller.settings.wto.key === "" ) {
-		callback( false );
-	}
-
-	$.ajax( {
-		url: "https://api.weather.com/v2/pws/observations/hourly/7day?stationId=" + location + "&format=json&units=e&apiKey=" + controller.settings.wto.key,
-		cache: true
-	} ).done( function( data ) {
-		if ( !data || data.errors ) {
-			callback( false );
-			return;
-		}
-
-		callback( true );
-	} ).fail( function() {
-		callback( false );
-	} );
-}
-
-function showEToAdjustmentOptions( button, callback ) {
-	$( ".ui-popup-active" ).find( "[data-role='popup']" ).popup( "close" );
-
-	// Elevation and baseline ETo for ETo adjustment.
-	var options = $.extend( {}, {
-			baseETo: 0,
-			elevation: 600
-		},
-		unescapeJSON( button.value )
-	);
-
-	if ( isMetric ) {
-		options.baseETo = Math.round( options.baseETo * 25.4 * 10 ) / 10;
-		options.elevation = Math.round( options.elevation / 3.28 );
-	}
-
-	var popup = $( "<div data-role='popup' data-theme='a' id='adjustmentOptions'>" +
-			"<div data-role='header' data-theme='b'>" +
-				"<h1>" + _( "Weather Adjustment Options" ) + "</h1>" +
-			"</div>" +
-			"<div class='ui-content'>" +
-				"<p class='rain-desc center smaller'>" +
-					_( "Set the baseline potential evapotranspiration (ETo) and elevation for your location. " ) +
-					_( "The ETo adjustment method will adjust the watering duration based on the difference between the baseline ETo and the current ETo." ) +
-				"</p>" +
-				"<div class='ui-grid-a'>" +
-					"<div class='ui-block-a'>" +
-						"<label class='center'>" +
-							_( "Baseline ETo" ) + ( isMetric ? " (mm" : "(in" ) + "/day)" +
-						"</label>" +
-						"<input data-wrapper-class='pad_buttons' class='baseline-ETo' type='number' min='0' " + ( isMetric ? "max='25' step='0.1'" : "max='1' step='0.01'" ) + " value='" + options.baseETo + "'>" +
-					"</div>" +
-					"<div class='ui-block-b'>" +
-						"<label class='center'>" +
-							_( "Elevation" ) + ( isMetric ? " (m)" : " (ft)" ) +
-						"</label>" +
-						"<input data-wrapper-class='pad_buttons' class='elevation' type='number' step='1'" + ( isMetric ? "min='-400' max='9000'" : "min='-1400' max='30000'" ) + " value='" + options.elevation + "'>" +
-					"</div>" +
-				"</div>" +
-				"<button class='detect-baseline-eto'>" + _( "Detect baseline ETo" ) + "</button>" +
-				"<button class='submit' data-theme='b'>" + _( "Submit" ) + "</button>" +
-			"</div>" +
-		"</div>"
-	);
-
-	popup.find( ".submit" ).on( "click", function() {
-		options = {
-			baseETo: parseFloat( popup.find( ".baseline-ETo" ).val() ),
-			elevation: parseInt( popup.find( ".elevation" ).val() )
-		};
-
-		// Convert to imperial before storing.
-		if ( isMetric ) {
-			options.baseETo = Math.round( options.baseETo / 25.4 * 100 ) / 100;
-			options.elevation = Math.round( options.elevation * 3.28 );
-		}
-
-		if ( button ) {
-			button.value = escapeJSON( options );
-		}
-
-		callback();
-
-		popup.popup( "close" );
-		return false;
-	} );
-
-	popup.find( ".detect-baseline-eto" ).on( "click", function() {
-
-		// Backup button contents so it can be restored after the request is completed.
-		var buttonContents = $( ".detect-baseline-eto" ).html();
-
-		showLoading( ".detect-baseline-eto" );
-
-		$.ajax( {
-			url: WEATHER_SERVER_URL + "/baselineETo?loc=" + encodeURIComponent( controller.settings.loc ),
-			contentType: "application/json; charset=utf-8",
-			success: function( data ) {
-
-				var baselineETo = data.eto;
-
-				// Convert to metric if necessary.
-				if ( isMetric ) {
-					baselineETo = Math.round( baselineETo * 25.4 * 100 ) / 100;
-				}
-
-				$( ".baseline-ETo" ).val( baselineETo );
-
-				window.alert( "Detected baseline ETo for configured location is " + baselineETo + ( isMetric ? "mm" : "in" ) + "/day" );
-			},
-			error: function( xhr, errorType ) {
-
-				// Use the response body for HTTP errors and the error type for JQuery errors.
-				var errorMessage = "Unable to detect baseline ETo: " +
-					( xhr.status ? xhr.responseText + "(" + xhr.status + ")" : errorType );
-				window.alert( errorMessage );
-				window.console.error( errorMessage );
-			},
-			complete: function( ) {
-				$( ".detect-baseline-eto" ).html( buttonContents );
-			}
-		} );
-
-		return false;
-	} );
-
-	popup.on( "focus", "input[type='number']", function() {
-		this.value = "";
-	} ).on( "blur", "input[type='number']", function() {
-
-		// Generic min/max checker for each option.
-		var min = parseFloat( this.min ),
-			max = parseFloat( this.max );
-
-		if ( this.value === "" ) {
-			this.value = "0";
-		}
-		if ( this.value < min || this.value > max ) {
-			this.value = this.value < min ? min : max;
-		}
-	} );
-
-	$( "#adjustmentOptions" ).remove();
-
-	popup.css( "max-width", "380px" );
-
-	openPopup( popup, { positionTo: "window" } );
-}
-
-function formatTemp( temp ) {
-	if ( isMetric ) {
-		temp = Math.round( ( temp - 32 ) * ( 5 / 9 ) * 10 ) / 10 + " &#176;C";
-	} else {
-		temp = Math.round( temp * 10 ) / 10 + " &#176;F";
-	}
-	return temp;
-}
-
-function formatPrecip( precip ) {
-	if ( isMetric ) {
-		precip = Math.round( precip * 25.4 * 10 ) / 10 + " mm";
-	} else {
-		precip = Math.round( precip * 100 ) / 100 + " in";
-	}
-	return precip;
-}
-
-function formatHumidity( humidity ) {
-	return Math.round( humidity ) + " %";
-}
-
-function formatSpeed( speed ) {
-	if ( isMetric ) {
-		speed = Math.round( speed * 1.6 * 10 ) / 10 + " km/h";
-	} else {
-		speed = Math.round( speed * 10 ) / 10 + " mph";
-	}
-	return speed;
-}
-
-function hideWeather() {
-	$( "#weather" ).empty().parents( ".info-card" ).addClass( "noweather" );
-}
-
-function finishWeatherUpdate() {
-	updateWeatherBox();
-	$.mobile.document.trigger( "weatherUpdateComplete" );
-}
-
-function updateWeather() {
-	var now = new Date().getTime();
-
-	if ( weather && weather.providedLocation === controller.settings.loc && now - weather.lastUpdated < 60 * 60 * 100 ) {
-		finishWeatherUpdate();
-		return;
-	} else if ( localStorage.weatherData ) {
-		try {
-			var weatherData = JSON.parse( localStorage.weatherData );
-			if ( weatherData.providedLocation === controller.settings.loc && now - weatherData.lastUpdated < 60 * 60 * 100 ) {
-				weather = weatherData;
-				finishWeatherUpdate();
-				return;
-			}
-		} catch ( err ) {}
-	}
-
-	weather = undefined;
-
-	if ( controller.settings.loc === "" ) {
-		hideWeather();
-		return;
-	}
-
-	showLoading( "#weather" );
-
-	$.ajax( {
-		url: WEATHER_SERVER_URL + "/weatherData?loc=" +
-			encodeURIComponent( controller.settings.loc ),
-		contentType: "application/json; charset=utf-8",
-		success: function( data ) {
-
-			// Hide the weather if no data is returned
-			if ( typeof data !== "object" ) {
-				hideWeather();
-				return;
-			}
-
-			currentCoordinates = data.location;
-
-			weather = data;
-			data.lastUpdated = new Date().getTime();
-			data.providedLocation = controller.settings.loc;
-			localStorage.weatherData = JSON.stringify( data );
-			finishWeatherUpdate();
-		}
-	} );
-}
-
-function checkURLandUpdateWeather() {
-	var finish = function( wsp ) {
-		if ( wsp ) {
-			WEATHER_SERVER_URL = currPrefix + wsp;
-		} else {
-			WEATHER_SERVER_URL = DEFAULT_WEATHER_SERVER_URL;
-		}
-
-		updateWeather();
-	};
-
-	if ( controller.settings.wsp ) {
-		if ( controller.settings.wsp === "weather.opensprinkler.com" ) {
-			finish();
-			return;
-		}
-
-		finish( controller.settings.wsp );
-		return;
-	}
-
-	return $.get( currPrefix + currIp + "/su" ).then( function( reply ) {
-		var wsp = reply.match( /value="([\w|:|/|.]+)" name=wsp/ );
-		finish( wsp ? wsp[ 1 ] : undefined );
-	} );
-}
-
-function updateWeatherBox() {
-	$( "#weather" )
-		.html(
-			( controller.settings.rd ? "<div class='rain-delay red'><span class='icon ui-icon-alert'></span>Rain Delay<span class='time'>" + dateToString( new Date( controller.settings.rdst * 1000 ), undefined, true ) + "</span></div>" : "" ) +
-			"<div title='" + weather.description + "' class='wicon'><img src='https://openweathermap.org/img/w/" + weather.icon + ".png'></div>" +
-			"<div class='inline tight'>" + formatTemp( weather.temp ) + "</div><br><div class='inline location tight'>" + _( "Current Weather" ) + "</div>" +
-			( typeof weather.alert === "object" ? "<div><button class='tight help-icon btn-no-border ui-btn ui-icon-alert ui-btn-icon-notext ui-corner-all'></button>" + weather.alert.type + "</div>" : "" ) )
-		.off( "click" ).on( "click", function( event ) {
-			var target = $( event.target );
-			if ( target.hasClass( "rain-delay" ) || target.parents( ".rain-delay" ).length ) {
-				areYouSure( _( "Do you want to turn off rain delay?" ), "", function() {
-					showLoading( "#weather" );
-					sendToOS( "/cv?pw=&rd=0" ).done( function() {
-						updateController( updateWeather );
-					} );
-				} );
-			} else {
-				changePage( "#forecast" );
-			}
-			return false;
-		} )
-		.parents( ".info-card" ).removeClass( "noweather" );
-}
-
 function coordsToLocation( lat, lon, callback, fallback ) {
 	fallback = fallback || lat + "," + lon;
 
@@ -3038,295 +2748,6 @@ function coordsToLocation( lat, lon, callback, fallback ) {
 	} );
 }
 
-function getSunTimes( date ) {
-	date = date || new Date( controller.settings.devt * 1000 );
-
-	var times = SunCalc.getTimes( date, currentCoordinates[ 0 ], currentCoordinates[ 1 ] ),
-		sunrise = times.sunrise,
-		sunset = times.sunset,
-		tzOffset = getTimezoneOffset();
-
-	sunrise.setUTCMinutes( sunrise.getUTCMinutes() + tzOffset );
-	sunset.setUTCMinutes( sunset.getUTCMinutes() + tzOffset );
-
-	sunrise = ( sunrise.getUTCHours() * 60 + sunrise.getUTCMinutes() );
-	sunset = ( sunset.getUTCHours() * 60 + sunset.getUTCMinutes() );
-
-	return [ sunrise, sunset ];
-}
-
-function makeAttribution( provider ) {
-	if ( typeof provider !== "string" ) { return ""; }
-
-	var attrib = "<div class='weatherAttribution'>";
-	switch ( provider ) {
-		case "Apple":
-			attrib += _( "Powered by Apple" );
-			break;
-		case "DarkSky":
-		case "DS":
-			attrib += "<a href='https://darksky.net/poweredby/' target='_blank'>" + _( "Powered by Dark Sky" ) + "</a>";
-			break;
-		case "OWM":
-			attrib += "<a href='https://openweathermap.org/' target='_blank'>" + _( "Powered by OpenWeather" ) + "</a>";
-			break;
-		case "DWD":
-				attrib += "<a href='https://brightsky.dev/' target='_blank'>" + _( "Powered by Bright Sky+DWD" ) + "</a>";
-				break;
-		case "OpenMeteo":
-		case "OM":
-				attrib += "<a href='https://open-meteo.com/' target='_blank'>" + _( "Powered by Open Meteo" ) + "</a>";
-				break;
-		case "WUnderground":
-		case "WU":
-			attrib += "<a href='https://wunderground.com/' target='_blank'>" + _( "Powered by Weather Underground" ) + "</a>";
-			break;
-		case "local":
-			attrib += _( "Powered by your Local PWS" );
-			break;
-		case "Manual":
-			attrib += _( "Using manual watering" );
-			break;
-		default:
-			attrib += _( "Unrecognised weather provider" );
-			break;
-	}
-	return attrib + "</div>";
-}
-
-function showForecast() {
-	var page = $( "<div data-role='page' id='forecast'>" +
-			"<div class='ui-content' role='main'>" +
-				"<ul data-role='listview' data-inset='true'>" +
-					makeForecast() +
-				"</ul>" +
-				makeAttribution( weather.wp || weather.weatherProvider ) +
-			"</div>" +
-		"</div>" );
-
-	changeHeader( {
-		title: _( "Forecast" ),
-		leftBtn: {
-			icon: "carat-l",
-			text: _( "Back" ),
-			class: "ui-toolbar-back-btn",
-			on: goBack
-		},
-		rightBtn: {
-			icon: "refresh",
-			text: _( "Refresh" ),
-			on: function() {
-				$.mobile.loading( "show" );
-				$.mobile.document.one( "weatherUpdateComplete", function() {
-					$.mobile.loading( "hide" );
-				} );
-				updateWeather();
-			}
-		}
-	} );
-
-	page.one( "pagehide", function() {
-		page.remove();
-	} );
-
-	page.find( ".alert" ).on( "click", function() {
-		openPopup( $( "<div data-role='popup' data-theme='a'>" +
-				"<div data-role='header' data-theme='b'>" +
-					"<h1>" + weather.alert.name + "</h1>" +
-				"</div>" +
-				"<div class='ui-content'>" +
-					"<span style='white-space: pre-wrap'>" + $.trim( weather.alert.message ) + "</span>" +
-				"</div>" +
-			"</div>" ) );
-	} );
-
-	$( "#forecast" ).remove();
-	$.mobile.pageContainer.append( page );
-}
-
-function makeForecast() {
-	var list = "",
-		sunrise = controller.settings.sunrise ? controller.settings.sunrise : getSunTimes()[ 0 ],
-		sunset = controller.settings.sunset ? controller.settings.sunset : getSunTimes()[ 1 ],
-		i, date, times;
-
-	var weekdays = [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ];
-
-	list += "<li data-icon='false' class='center'>" +
-			"<div>" + _( "Now" ) + "</div><br>" +
-			"<div title='" + weather.description + "' class='wicon'><img src='https://openweathermap.org/img/w/" + weather.icon + ".png'></div>" +
-			"<span>" + formatTemp( weather.temp ) + "</span><br>" +
-			"<span>" + _( "Sunrise" ) + "</span><span>: " + pad( parseInt( sunrise / 60 ) % 24 ) + ":" + pad( sunrise % 60 ) + "</span> " +
-			"<span>" + _( "Sunset" ) + "</span><span>: " + pad( parseInt( sunset / 60 ) % 24 ) + ":" + pad( sunset % 60 ) + "</span>" +
-		"</li>";
-
-	for ( i = 1; i < weather.forecast.length; i++ ) {
-		date = new Date( weather.forecast[ i ].date * 1000 );
-		times = getSunTimes( date );
-
-		sunrise = times[ 0 ];
-		sunset = times[ 1 ];
-
-		list += "<li data-icon='false' class='center'>" +
-				"<div>" + date.toLocaleDateString() + "</div><br>" +
-				"<div title='" + weather.forecast[ i ].description + "' class='wicon'><img src='https://openweathermap.org/img/w/" + weather.forecast[ i ].icon + ".png'></div>" +
-				"<span>" + _( weekdays[ date.getDay() ] ) + "</span><br>" +
-				"<span>" + _( "Low" ) + "</span><span>: " + formatTemp( weather.forecast[ i ].temp_min ) + "  </span>" +
-				"<span>" + _( "High" ) + "</span><span>: " + formatTemp( weather.forecast[ i ].temp_max ) + "</span><br>" +
-				"<span>" + _( "Sunrise" ) + "</span><span>: " + pad( parseInt( sunrise / 60 ) % 24 ) + ":" + pad( sunrise % 60 ) + "</span> " +
-				"<span>" + _( "Sunset" ) + "</span><span>: " + pad( parseInt( sunset / 60 ) % 24 ) + ":" + pad( sunset % 60 ) + "</span>" +
-			"</li>";
-	}
-
-	return list;
-}
-
-function overlayMap( callback ) {
-
-	// Looks up the location and shows a list possible matches for selection
-	// Returns the selection to the callback
-	$( "#location-list" ).popup( "destroy" ).remove();
-	$.mobile.loading( "show" );
-
-	callback = callback || function() {};
-
-	var popup = $( "<div data-role='popup' id='location-list' data-theme='a' style='background-color:rgb(229, 227, 223);'>" +
-			"<a href='#' data-rel='back' class='ui-btn ui-corner-all ui-shadow ui-btn-b ui-icon-delete ui-btn-icon-notext ui-btn-right'>" + _( "Close" ) + "</a>" +
-				"<iframe style='border:none' src='" + getAppURLPath() + "map.html' width='100%' height='100%' seamless=''></iframe>" +
-		"</div>" ),
-		getCurrentLocation = function( callback ) {
-			callback = callback || function( result ) {
-				if ( result ) {
-					iframe.get( 0 ).contentWindow.postMessage( {
-						type: "currentLocation",
-						payload: {
-							lat: result.coords.latitude,
-							lon: result.coords.longitude
-						}
-					}, "*" );
-				}
-			};
-
-			var exit = function( result ) {
-					clearTimeout( loadMsg );
-					$.mobile.loading( "hide" );
-
-					if ( !result ) {
-						showerror( _( "Unable to retrieve your current location" ) );
-					}
-
-					callback( result );
-				},
-				loadMsg;
-
-			try {
-				loadMsg = setTimeout( function() {
-					$.mobile.loading( "show", {
-						html: "<div class='logo'></div><h1 style='padding-top:5px'>" + _( "Attempting to retrieve your current location" ) + "</h1></p>",
-						textVisible: true,
-						theme: "b"
-					} );
-				}, 100 );
-				navigator.geolocation.getCurrentPosition( function( position ) {
-					clearTimeout( loadMsg );
-					exit( position );
-				}, function() {
-					exit( false );
-				}, { timeout: 10000 } );
-			} catch ( err ) { exit( false ); }
-		},
-		updateStations = function( latitude, longitude ) {
-			var key = $( "#wtkey" ).val();
-			if ( key === "" ) {
-				return;
-			}
-
-			$.ajax( {
-				url: "https://api.weather.com/v3/location/near?format=json&product=pws&apiKey=" + key +
-						"&geocode=" + encodeURIComponent( latitude ) + "," + encodeURIComponent( longitude ),
-				cache: true
-			} ).done( function( data ) {
-				var sortedData = [];
-
-				data.location.stationId.forEach( function( id, index ) {
-					sortedData.push( {
-						id: id,
-						lat: data.location.latitude[ index ],
-						lon: data.location.longitude[ index ],
-						message: data.location.stationId[ index ]
-					} );
-				} );
-
-				if ( sortedData.length > 0 ) {
-					sortedData = encodeURIComponent( JSON.stringify( sortedData ) );
-					iframe.get( 0 ).contentWindow.postMessage( {
-						type: "pwsData",
-						payload: sortedData
-					}, "*" );
-				}
-			} );
-		},
-		iframe = popup.find( "iframe" ),
-		locInput = $( "#loc" ).val(),
-		current = {
-			lat: locInput.match( regex.gps ) ? locInput.split( "," )[ 0 ] : currentCoordinates[ 0 ],
-			lon: locInput.match( regex.gps ) ? locInput.split( "," )[ 1 ] : currentCoordinates[ 1 ]
-		},
-		dataSent = false;
-
-	// Wire in listener for communication from iframe
-	$.mobile.window.off( "message onmessage" ).on( "message onmessage", function( e ) {
-		var data = e.originalEvent.data;
-
-		if ( typeof data.WS !== "undefined" ) {
-			var coords = data.WS.split( "," );
-			callback( coords.length > 1 ? coords : data.WS, data.station );
-			dataSent = true;
-			popup.popup( "destroy" ).remove();
-		} else if ( data.loaded === true ) {
-			$.mobile.loading( "hide" );
-		} else if ( typeof data.location === "object" ) {
-			updateStations( data.location[ 0 ], data.location[ 1 ] );
-		} else if ( data.dismissKeyboard === true ) {
-			document.activeElement.blur();
-		} else if ( data.getLocation === true ) {
-			getCurrentLocation();
-		}
-	} );
-
-	iframe.one( "load", function() {
-		if ( current.lat === 0 && current.lon === 0 ) {
-			getCurrentLocation();
-		}
-
-		this.contentWindow.postMessage( {
-			type: "startLocation",
-			payload: {
-				start: current
-			}
-		}, "*" );
-	} );
-
-	popup.one( "popupafterclose", function() {
-		if ( dataSent === false ) {
-			callback( false );
-		}
-	} );
-
-	openPopup( popup, {
-		beforeposition: function() {
-			popup.css( {
-				width: window.innerWidth - 36,
-				height: window.innerHeight - 28
-			} );
-		},
-		x: 0,
-		y: 0
-	} );
-
-	updateStations( current.lat, current.lon );
-}
-
 // Ensure error codes align with reboot causes in Firmware defines.h
 var rebootReasons =	{ 0: _( "None" ), 1: _( "Factory Reset" ), 2: _( "Reset Button" ), 3: _( "WiFi Change" ),
 					4: _( "Web Request" ), 5: _( "Web Request" ), 6: _( "WiFi Configure" ), 7: _( "Firmware Update" ),
@@ -3370,28 +2791,6 @@ function getRebootReason( reason ) {
 	return _( "Unrecognised" ) + " (" + reason + ")";
 }
 
-function getWeatherError( err ) {
-	var errType = Math.floor( err / 10 );
-
-	if ( err in weatherErrors ) {
-		return weatherErrors[ err ];
-	} else if ( err <= 59 && err >= 10 && errType in weatherErrors ) {
-		return weatherErrors[ errType ];
-	}
-
-	return _( "Unrecognised" ) + " (" + err + ")";
-}
-
-function getWeatherStatus( status ) {
-	if ( status < 0 ) {
-		return "<font class='debugWUError'>" + _( "Offline" ) + "</font>";
-	} else if ( status > 0 ) {
-		return "<font class='debugWUError'>" + _( "Error" ) + "</font>";
-	} else {
-		return "<font class='debugWUOK'>" + _( "Online" ) + "</font>";
-	}
-}
-
 function getWiFiRating( rssi ) {
 	var rating = "";
 
@@ -3408,63 +2807,6 @@ function getWiFiRating( rssi ) {
 	}
 
 	return Math.round( rssi ) + "dBm (" + rating + ")";
-}
-
-function debugWU() {
-	var popup = "<div data-role='popup' id='debugWU' class='ui-content ui-page-theme-a'>";
-
-	popup += "<div class='debugWUHeading'>System Status</div>" +
-			"<table class='debugWUTable'>" +
-				( typeof controller.settings.lupt === "number" ? "<tr><td>" + _( "Last Reboot" ) + "</td><td>" +
-					( controller.settings.lupt < 1000 ? "--" : dateToString( new Date( controller.settings.lupt * 1000 ), null, 2 ) ) + "</td></tr>" : "" ) +
-				( typeof controller.settings.lrbtc === "number" ? "<tr><td>" + _( "Reboot Reason" ) + "</td><td>" + getRebootReason( controller.settings.lrbtc ) + "</td></tr>" : "" ) +
-				( typeof controller.settings.RSSI === "number" ? "<tr><td>" + _( "WiFi Strength" ) + "</td><td>" + getWiFiRating( controller.settings.RSSI ) + "</td></tr>" : "" ) +
-				( typeof controller.settings.wterr === "number" ? "<tr><td>" + _( "Weather Service" ) + "</td><td>" + getWeatherStatus( controller.settings.wterr ) + "</td></tr>" : "" ) +
-			"</table>" +
-			"<div class='debugWUHeading'>Watering Level</div>" +
-			"<table class='debugWUTable'>" +
-				( typeof controller.options.uwt !== "undefined" ? "<tr><td>" + _( "Method" ) + "</td><td>" + getAdjustmentMethod( controller.options.uwt ).name + "</td></tr>" : "" ) +
-				( typeof controller.options.wl !== "undefined" ? "<tr><td>" + _( "Watering Level" ) + "</td><td>" + controller.options.wl + " %</td></tr>" : "" ) +
-				( typeof controller.settings.lswc === "number" ? "<tr><td>" + _( "Last Updated" ) + "</td><td>" +
-					( controller.settings.lswc === 0  ? _( "Never" ) : humaniseDuration( controller.settings.devt * 1000, controller.settings.lswc * 1000 ) ) + "</td></tr>" : "" ) +
-			"</table>" +
-			"<div class='debugWUHeading'>Weather Service Details</div>" +
-			"<div class='debugWUScrollable'>" +
-			"<table class='debugWUTable'>";
-
-	if ( typeof controller.settings.wtdata === "object" && Object.keys( controller.settings.wtdata ).length > 0 ) {
-		popup += ( typeof controller.settings.wtdata.h !== "undefined" ? "<tr><td>" + _( "Mean Humidity" ) + "</td><td>" + formatHumidity( controller.settings.wtdata.h ) + "</td></tr>" : "" ) +
-			( typeof controller.settings.wtdata.t !== "undefined" ? "<tr><td>" + _( "Mean Temp" ) + "</td><td>" + formatTemp( controller.settings.wtdata.t ) + "</td></tr>" : "" ) +
-			( typeof controller.settings.wtdata.p !== "undefined" ? "<tr><td>" + _( "Total Rain" ) + "</td><td>" + formatPrecip( controller.settings.wtdata.p ) + "</td></tr>" : "" ) +
-			( typeof controller.settings.wtdata.eto !== "undefined" ? "<tr><td>" + _( "ETo" ) + "</td><td>" + formatPrecip( controller.settings.wtdata.eto ) + "</td></tr>" : "" ) +
-			( typeof controller.settings.wtdata.radiation !== "undefined" ? "<tr><td>" + _( "Mean Radiation" ) + "</td><td>" + controller.settings.wtdata.radiation + " kWh/m2</td></tr>" : "" ) +
-			( typeof controller.settings.wtdata.minT !== "undefined" ? "<tr><td>" + _( "Min Temp" ) + "</td><td>" + formatTemp( controller.settings.wtdata.minT ) + "</td></tr>" : "" ) +
-			( typeof controller.settings.wtdata.maxT !== "undefined" ? "<tr><td>" + _( "Max Temp" ) + "</td><td>" + formatTemp( controller.settings.wtdata.maxT ) + "</td></tr>" : "" ) +
-			( typeof controller.settings.wtdata.minH !== "undefined" ? "<tr><td>" + _( "Min Humidity" ) + "</td><td>" + formatHumidity( controller.settings.wtdata.minH ) + "</td></tr>" : "" ) +
-			( typeof controller.settings.wtdata.maxH !== "undefined" ? "<tr><td>" + _( "Max Humidity" ) + "</td><td>" + formatHumidity( controller.settings.wtdata.maxH ) + "</td></tr>" : "" ) +
-			( typeof controller.settings.wtdata.wind !== "undefined" ? "<tr><td>" + _( "Mean Wind" ) + "</td><td>" + formatSpeed( controller.settings.wtdata.wind ) + "</td></tr>" : "" );
-	}
-
-	popup += ( typeof controller.settings.lwc === "number" ? "<tr><td>" + _( "Last Request" ) + "</td><td>" + dateToString( new Date( controller.settings.lwc * 1000 ), null, 2 ) + "</td></tr>" : "" );
-	popup += ( typeof controller.settings.wterr === "number" ? "<tr><td>" + _( "Last Response" ) + "</td><td>" + getWeatherError( controller.settings.wterr ) + "</td></tr>" : "" );
-	popup += "</table></div>";
-
-	if ( typeof controller.settings.otcs === "number" ) {
-		popup += "<div class='debugWUHeading'>Integrations</div>" +
-			"<table class='debugWUTable'>" +
-			"<tr><td>OpenThings Cloud</td><td>" + resolveOTCStatus( controller.settings.otcs ) + "</td></tr>" +
-		"</table>";
-	}
-
-	if ( controller.settings.wtdata && ( typeof controller.settings.wtdata.wp === "string" || typeof controller.settings.wtdata.weatherProvider === "string" ) ) {
-		popup += "<hr>";
-		popup += makeAttribution( controller.settings.wtdata.wp || controller.settings.wtdata.weatherProvider );
-	}
-	popup += "</div>";
-
-	openPopup( $( popup ) );
-
-	return false;
 }
 
 function resolveOTCStatus( status ) {
@@ -3554,21 +2896,6 @@ function setRestriction( id, uwt ) {
 	}
 
 	return uwt;
-}
-
-function testAPIKey( key, callback ) {
-	$.ajax( {
-		url: "https://api.weather.com/v2/pws/observations/current?stationId=KMAHANOV10&format=json&units=m&apiKey=" + key,
-		cache: true
-	} ).done( function( data ) {
-		if ( data.errors ) {
-			callback( false );
-			return;
-		}
-		callback( true );
-	} ).fail( function() {
-		callback( false );
-	} );
 }
 
 // Panel functions
@@ -6557,7 +5884,7 @@ var showHome = ( function() {
 		$.mobile.pageContainer.append( page );
 
 		if ( !$.isEmptyObject( weather ) ) {
-			updateWeatherBox();
+			updateWeatherBox("showHome");
 		}
 	}
 
@@ -11155,61 +10482,6 @@ function cloudSync( callback ) {
 	} );
 }
 
-var corruptionNotificationShown = false;
-function handleCorruptedWeatherOptions( wto ) {
-	if ( corruptionNotificationShown ) {
-		return;
-	}
-
-	addNotification( {
-		title: _( "Weather Options have Corrupted" ),
-		desc: _( "Click here to retrieve the partial weather option data" ),
-		on: function() {
-			var button = $( this ).parent(),
-				popup = $(
-					"<div data-role='popup' data-theme='a' class='modal ui-content' id='weatherOptionCorruption'>" +
-						"<h3 class='center'>" +
-							_( "Weather option data has corrupted" ) +
-						"</h3>" +
-						"<h5 class='center'>" + _( "Please note this may indicate other data corruption as well, please verify all settings." ) + "</h5>" +
-						"<h6 class='center'>" + _( "Below is the corrupt data which could not be parsed but may be useful for restoration." ) + "</h6>" +
-						"<code>" +
-							wto[ 0 ].substr( 7 ) +
-						"</code>" +
-						"<a class='ui-btn ui-corner-all ui-shadow red reset-options' style='width:80%;margin:5px auto;' href='#'>" +
-							_( "Reset All Options" ) +
-						"</a>" +
-						"<a class='ui-btn ui-corner-all ui-shadow submit' style='width:80%;margin:5px auto;' href='#'>" +
-							_( "Dismiss" ) +
-						"</a>" +
-					"</div>"
-				);
-
-			popup.find( ".submit" ).on( "click", function() {
-				removeNotification( button );
-				popup.popup( "close" );
-
-				return false;
-			} );
-
-			popup.find( ".reset-options" ).on( "click", function() {
-				removeNotification( button );
-				popup.popup( "close" );
-				resetAllOptions( function() {
-					showerror( _( "Settings have been saved" ) );
-				} );
-
-				return false;
-			} );
-
-			openPopup( popup );
-			return false;
-		}
-	} );
-
-	corruptionNotificationShown = true;
-}
-
 function handleExpiredLogin() {
 	storage.remove( [ "cloudToken" ], updateLoginButtons );
 
@@ -13921,4 +13193,61 @@ function decodeDate( dateValue ) {
 	} else {
 		return "12/31";
 	}
+}
+
+function debugWU() {
+	var popup = "<div data-role='popup' id='debugWU' class='ui-content ui-page-theme-a'>";
+
+	popup += "<div class='debugWUHeading'>System Status</div>" +
+			"<table class='debugWUTable'>" +
+				( typeof controller.settings.lupt === "number" ? "<tr><td>" + _( "Last Reboot" ) + "</td><td>" +
+					( controller.settings.lupt < 1000 ? "--" : dateToString( new Date( controller.settings.lupt * 1000 ), null, 2 ) ) + "</td></tr>" : "" ) +
+				( typeof controller.settings.lrbtc === "number" ? "<tr><td>" + _( "Reboot Reason" ) + "</td><td>" + getRebootReason( controller.settings.lrbtc ) + "</td></tr>" : "" ) +
+				( typeof controller.settings.RSSI === "number" ? "<tr><td>" + _( "WiFi Strength" ) + "</td><td>" + getWiFiRating( controller.settings.RSSI ) + "</td></tr>" : "" ) +
+				( typeof controller.settings.wterr === "number" ? "<tr><td>" + _( "Weather Service" ) + "</td><td>" + getWeatherStatus( controller.settings.wterr ) + "</td></tr>" : "" ) +
+			"</table>" +
+			"<div class='debugWUHeading'>Watering Level</div>" +
+			"<table class='debugWUTable'>" +
+				( typeof controller.options.uwt !== "undefined" ? "<tr><td>" + _( "Method" ) + "</td><td>" + getAdjustmentMethod( controller.options.uwt ).name + "</td></tr>" : "" ) +
+				( typeof controller.options.wl !== "undefined" ? "<tr><td>" + _( "Watering Level" ) + "</td><td>" + controller.options.wl + " %</td></tr>" : "" ) +
+				( typeof controller.settings.lswc === "number" ? "<tr><td>" + _( "Last Updated" ) + "</td><td>" +
+					( controller.settings.lswc === 0  ? _( "Never" ) : humaniseDuration( controller.settings.devt * 1000, controller.settings.lswc * 1000 ) ) + "</td></tr>" : "" ) +
+			"</table>" +
+			"<div class='debugWUHeading'>Weather Service Details</div>" +
+			"<div class='debugWUScrollable'>" +
+			"<table class='debugWUTable'>";
+
+	if ( typeof controller.settings.wtdata === "object" && Object.keys( controller.settings.wtdata ).length > 0 ) {
+		popup += ( typeof controller.settings.wtdata.h !== "undefined" ? "<tr><td>" + _( "Mean Humidity" ) + "</td><td>" + formatHumidity( controller.settings.wtdata.h ) + "</td></tr>" : "" ) +
+			( typeof controller.settings.wtdata.t !== "undefined" ? "<tr><td>" + _( "Mean Temp" ) + "</td><td>" + formatTemp( controller.settings.wtdata.t ) + "</td></tr>" : "" ) +
+			( typeof controller.settings.wtdata.p !== "undefined" ? "<tr><td>" + _( "Total Rain" ) + "</td><td>" + formatPrecip( controller.settings.wtdata.p ) + "</td></tr>" : "" ) +
+			( typeof controller.settings.wtdata.eto !== "undefined" ? "<tr><td>" + _( "ETo" ) + "</td><td>" + formatPrecip( controller.settings.wtdata.eto ) + "</td></tr>" : "" ) +
+			( typeof controller.settings.wtdata.radiation !== "undefined" ? "<tr><td>" + _( "Mean Radiation" ) + "</td><td>" + controller.settings.wtdata.radiation + " kWh/m2</td></tr>" : "" ) +
+			( typeof controller.settings.wtdata.minT !== "undefined" ? "<tr><td>" + _( "Min Temp" ) + "</td><td>" + formatTemp( controller.settings.wtdata.minT ) + "</td></tr>" : "" ) +
+			( typeof controller.settings.wtdata.maxT !== "undefined" ? "<tr><td>" + _( "Max Temp" ) + "</td><td>" + formatTemp( controller.settings.wtdata.maxT ) + "</td></tr>" : "" ) +
+			( typeof controller.settings.wtdata.minH !== "undefined" ? "<tr><td>" + _( "Min Humidity" ) + "</td><td>" + formatHumidity( controller.settings.wtdata.minH ) + "</td></tr>" : "" ) +
+			( typeof controller.settings.wtdata.maxH !== "undefined" ? "<tr><td>" + _( "Max Humidity" ) + "</td><td>" + formatHumidity( controller.settings.wtdata.maxH ) + "</td></tr>" : "" ) +
+			( typeof controller.settings.wtdata.wind !== "undefined" ? "<tr><td>" + _( "Mean Wind" ) + "</td><td>" + formatSpeed( controller.settings.wtdata.wind ) + "</td></tr>" : "" );
+	}
+
+	popup += ( typeof controller.settings.lwc === "number" ? "<tr><td>" + _( "Last Request" ) + "</td><td>" + dateToString( new Date( controller.settings.lwc * 1000 ), null, 2 ) + "</td></tr>" : "" );
+	popup += ( typeof controller.settings.wterr === "number" ? "<tr><td>" + _( "Last Response" ) + "</td><td>" + getWeatherError( controller.settings.wterr ) + "</td></tr>" : "" );
+	popup += "</table></div>";
+
+	if ( typeof controller.settings.otcs === "number" ) {
+		popup += "<div class='debugWUHeading'>Integrations</div>" +
+			"<table class='debugWUTable'>" +
+			"<tr><td>OpenThings Cloud</td><td>" + resolveOTCStatus( controller.settings.otcs ) + "</td></tr>" +
+		"</table>";
+	}
+
+	if ( controller.settings.wtdata && ( typeof controller.settings.wtdata.wp === "string" || typeof controller.settings.wtdata.weatherProvider === "string" ) ) {
+		popup += "<hr>";
+		popup += makeAttribution( controller.settings.wtdata.wp || controller.settings.wtdata.weatherProvider );
+	}
+	popup += "</div>";
+
+	openPopup( $( popup ) );
+
+	return false;
 }
