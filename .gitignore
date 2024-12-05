@@ -17,6 +17,7 @@ xcuserdata/
 
 # Coverage data
 coverage
+test/reports
 
 # VS Code
 typings/

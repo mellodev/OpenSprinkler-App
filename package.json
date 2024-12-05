@@ -53,9 +53,11 @@
 		"karma": "^6.4.4",
 		"karma-chai": "^0.1.0",
 		"karma-chrome-launcher": "^3.2.0",
+		"karma-coverage": "^2.2.1",
 		"karma-mocha": "^2.0.1",
 		"lint-staged": "^15.2.10",
 		"mocha": "^10.8.2",
+		"nyc": "^17.1.0",
 		"po2json": "^0.4.5",
 		"sinon": "^19.0.2",
 		"sort-package-json": "^2.10.1"

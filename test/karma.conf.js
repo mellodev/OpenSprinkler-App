@@ -29,5 +29,17 @@ module.exports = function (config) {
 		],
 		browsers: ['ChromeHeadless'],
 		singleRun: true,
+		reporters: ['progress', 'coverage'],
+		preprocessors: {
+			// Specify the files you want to have coverage reported for.
+			// Usually, this will be your source code files, excluding test files.
+			'www/js/**/*.js': ['coverage']
+		},
+		coverageReporter: {
+			// Specify the type of report(s) you want and where to put them
+			type: 'html',
+			dir: 'test/reports/'
+		},
+
 	});
 };
