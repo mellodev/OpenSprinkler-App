@@ -635,6 +635,15 @@ input[type=number] {
     bottom: 5px;
     height: 22px;
 }
+.move-down {
+    border: none !important;
+    float: right;
+    padding-left:10px;
+    /* margin-right: -10px !important; */
+    background-color: transparent !important;
+    bottom: 5px;
+    height: 22px;
+}
 .delete-day, .program-copy, .connectnow, .collapsible-button-right {
     font-size: 11px;
     font-weight: bold;

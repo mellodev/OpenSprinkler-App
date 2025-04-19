@@ -73,6 +73,7 @@ OSApp.Programs.displayPage = function(programId) {
 		} );
 
 		if ( OSApp.Firmware.checkOSVersion( 210 ) ) {
+			// FIXME: program position reordering needs refactoring. Either store program position client side, in cloud, OR extend firmware with a new endpoint with pid + index
 			list.find( ".move-up" ).removeClass( "hidden" ).on( "click", function() {
 				var group = $( this ).parents( "fieldset" ),
 					pid = parseInt( group.attr( "id" ).split( "-" )[ 1 ] );
@@ -86,6 +87,26 @@ OSApp.Programs.displayPage = function(programId) {
 						OSApp.Programs.updateProgramHeader();
 					} );
 				} );
+
+				return false;
+			} );
+
+			list.find( ".move-down" ).removeClass( "hidden" ).on( "click", function() {
+				alert('not implemented');
+				/*
+				var group = $( this ).parents( "fieldset" ),
+					pid = parseInt( group.attr( "id" ).split( "-" )[ 1 ] );
+
+				$.mobile.loading( "show" );
+
+				OSApp.Firmware.sendToOS( "/up?pw=&pid=" + pid ).done( function() {
+					OSApp.Sites.updateControllerPrograms( function() {
+						$.mobile.loading( "hide" );
+						page.trigger( "programrefresh" );
+						OSApp.Programs.updateProgramHeader();
+					} );
+				} );
+				 */
 
 				return false;
 			} );
@@ -1736,9 +1757,11 @@ OSApp.Programs.makeAllPrograms = function() {
 		if ( OSApp.Firmware.checkOSVersion( 210 ) ) {
 			name = OSApp.currentSession.controller.programs.pd[ i ][ 5 ];
 		}
-		list += "<fieldset id='program-" + i + "' data-role='collapsible'><h3><a " + ( i > 0 ? "" : "style='visibility:hidden' " ) +
-				"class='hidden ui-btn ui-btn-icon-notext ui-icon-arrow-u ui-btn-corner-all move-up'></a><a class='ui-btn ui-btn-corner-all program-copy'>" +
-			OSApp.Language._( "copy" ) + "</a><span class='program-name'>" + name + "</span></h3>";
+		list += "<fieldset id='program-" + i + "' data-role='collapsible'><h3>" +
+				"<a " + ( i !== (OSApp.currentSession.controller.programs.pd.length - 1) ? "" : "style='visibility:hidden' " ) + "class='hidden ui-btn ui-btn-icon-notext ui-icon-arrow-d ui-btn-corner-all move-down'></a>" +
+				"<a " + ( i > 0 ? "" : "style='visibility:hidden' " ) + "class='hidden ui-btn ui-btn-icon-notext ui-icon-arrow-u ui-btn-corner-all move-up'></a>" +
+				"<a class='ui-btn ui-btn-corner-all program-copy'>" + OSApp.Language._( "copy" ) + "</a>" +
+			"<span class='program-name'>" + name + "</span></h3>";
 		list += "</fieldset>";
 	}
 	return list + "</div>";
