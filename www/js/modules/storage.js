@@ -21,7 +21,6 @@ OSApp.Storage = OSApp.Storage || {};
 OSApp.Storage.store = store.namespace('OpenSprinkler')
 
 OSApp.Storage.get = function( query, callback ) {
-    callback = callback || function() {};
     var data = {};
 
     if ( typeof query === "string" ) {
@@ -34,7 +33,11 @@ OSApp.Storage.get = function( query, callback ) {
         });
     }
 
-    callback(data);
+	if ( callback && typeof callback === 'function' ) {
+    	callback(data);
+	} else {
+		return data;
+	}
 };
 
 /* Usage: OSApp.Storage.set({ preferences: { theme: 'dark', notifications: true } }); */
@@ -69,6 +72,48 @@ OSApp.Storage.remove = function( keysToRemove, callback ) {
     callback(true);
 };
 
+OSApp.Storage.migrateLocalStorage = function() {
+	// Check if instance is using localStorage rather than store2
+	const keys = [
+		'cloudDataToken',
+		'current_site',
+		'displayOption',
+		'groupView',
+		'is24Hour',
+		'isMetric',
+		'lang',
+		'lastProgramRun',
+		'runonce',
+		'showDisabled',
+		'showStationNum',
+		'sites',
+		'sortByStationName',
+		'weatherData'
+	];
+
+	keys.forEach(function(storageKey) {
+		try {
+			const oldValueString = localStorage.getItem(storageKey);
+			let valueToStore;
+
+			try {
+				valueToStore = {[storageKey]: JSON.parse(oldValueString)};
+			} catch {
+				valueToStore = {storageKey: oldValueString};
+			}
+
+
+			OSApp.Storage.set(valueToStore, function(){
+				console.log(`*** migrateLocalStorage migrated key ${storageKey}`, {oldValueString, valueToStore});
+
+				// localStorage.removeItem(storageKey)
+			})
+		} catch(ex) {
+			console.error("*** OSApp.Storage.migrateLocalStorage uncaught exception", ex);
+		}
+	})
+
+}
 OSApp.Storage.loadLocalSettings = function() {
 	OSApp.Storage.get( "isMetric", function( data ) {
 

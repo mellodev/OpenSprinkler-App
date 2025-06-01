@@ -14,7 +14,7 @@
  */
 
 describe("Initial Definition Check", function () {
-	it("storage.set(object,callback) should accept an object of key/value pairs to be set into localStorage and respond with callback", function (done) {
+	it("storage.set(object,callback) should accept an object of key/value pairs to be set into storage and respond with callback", function (done) {
 		assert.doesNotThrow(function () {
 			OSApp.Storage.set({
 				"testkey": "helloworld",
@@ -31,7 +31,7 @@ describe("Initial Definition Check", function () {
 		});
 	});
 
-	it("storage.get(object,callback) should accept an array of keys to be retrieved from localStorage and respond with callback", function (done) {
+	it("storage.get(object,callback) should accept an array of keys to be retrieved from storage and respond with callback", function (done) {
 		assert.doesNotThrow(function () {
 			OSApp.Storage.get(["testkey"], function (result) {
 				if (result.testkey === "helloworld") {
@@ -41,7 +41,7 @@ describe("Initial Definition Check", function () {
 		});
 	});
 
-	it("storage.remove(object,callback) should accept an array of keys to be deleted from localStorage and respond with callback", function (done) {
+	it("storage.remove(object,callback) should accept an array of keys to be deleted from storage and respond with callback", function (done) {
 		assert.doesNotThrow(function () {
 			OSApp.Storage.remove(["testkey"], function (result) {
 				if (result === true) {
@@ -51,7 +51,7 @@ describe("Initial Definition Check", function () {
 		});
 	});
 
-	it("storage.remove(string,callback) should accept a key to be deleted from localStorage and respond with callback", function (done) {
+	it("storage.remove(string,callback) should accept a key to be deleted from storage and respond with callback", function (done) {
 		assert.doesNotThrow(function () {
 			OSApp.Storage.remove("fakekey", function (result) {
 				if (result === true) {

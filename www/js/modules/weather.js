@@ -638,12 +638,13 @@ OSApp.Weather.updateWeather = function() {
 
 	var now = new Date().getTime();
 
+	const weatherData = OSApp.Storage.get( 'weatherData' );
+	console.log("*** updateWeather weatherData", weatherData);
 	if ( OSApp.currentSession.weather && OSApp.currentSession.weather.providedLocation === OSApp.currentSession.controller.settings.loc && now - OSApp.currentSession.weather.lastUpdated < 60 * 60 * 100 ) {
 		OSApp.Weather.finishWeatherUpdate();
 		return;
-	} else if ( localStorage.weatherData ) {
+	} else if ( weatherData ) {
 		try {
-			var weatherData = JSON.parse( localStorage.weatherData );
 			if ( weatherData.providedLocation === OSApp.currentSession.controller.settings.loc && now - weatherData.lastUpdated < 60 * 60 * 100 ) {
 				OSApp.currentSession.weather = weatherData;
 				OSApp.Weather.finishWeatherUpdate();
@@ -695,7 +696,7 @@ OSApp.Weather.updateWeather = function() {
 			OSApp.currentSession.weather = data;
 			data.lastUpdated = new Date().getTime();
 			data.providedLocation = OSApp.currentSession.controller.settings.loc;
-			localStorage.weatherData = JSON.stringify( data );
+			OSApp.Storage.set( {weatherData: data });
 			OSApp.Weather.finishWeatherUpdate();
 		}
 	} );

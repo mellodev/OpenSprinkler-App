@@ -503,7 +503,25 @@ OSApp.Sites.checkConfigured = function( firstLoad ) {
 };
 
 OSApp.Sites.parseSites = function( sites ) {
-	return ( sites === undefined || sites === null ) ? {} : JSON.parse( sites );
+	let result = {};
+
+	// Check if sites is already an object or needs to be parsed to JSON
+	if ( sites !== undefined || sites !== null ) {
+		if ( typeof sites === 'string' ) {
+			try {
+				result = JSON.parse( sites );
+			} catch {
+				console.error("*** Unable to parse sites!", sites);
+			}
+		}
+
+		if ( typeof sites === 'object' ) {
+			result = sites;
+		}
+
+	}
+
+	return result
 };
 
 OSApp.Sites.showSiteSelect = function( list ) {
