@@ -1,3 +1,5 @@
+/* global store */
+
 /* OpenSprinkler App
  * Copyright (C) 2015 - present, Samer Albahra. All rights reserved.
  *
@@ -15,52 +17,56 @@
 var OSApp = OSApp || {};
 OSApp.Storage = OSApp.Storage || {};
 
-// Functions
+// We use store2 to wrap localStorage to provide namespacing (See github issue #214) store2 docs: https://github.com/nbubna/store
+OSApp.Storage.store = store.namespace('OpenSprinkler')
+
 OSApp.Storage.get = function( query, callback ) {
-	callback = callback || function() {};
-	var data = {},
-		i;
+    callback = callback || function() {};
+    var data = {};
 
-	if ( typeof query === "string" ) {
-		query = [ query ];
-	}
+    if ( typeof query === "string" ) {
+        query = [ query ];
+    }
 
-	for ( i in query ) {
-		if ( Object.prototype.hasOwnProperty.call(query,  i ) ) {
-			data[ query[ i ] ] = localStorage.getItem( query[ i ] );
-		}
-	}
+    if (Array.isArray(query)) {
+        query.forEach(function(key) {
+            data[key] = OSApp.Storage.store.get(key);
+        });
+    }
 
-	callback( data );
+    callback(data);
 };
 
-OSApp.Storage.set = function( query, callback ) {
-	callback = callback || function() {};
-	var i;
-	for ( i in query ) {
-		if ( Object.prototype.hasOwnProperty.call(query,  i ) ) {
-			localStorage.setItem( i, query[ i ] );
-		}
-	}
+/* Usage: OSApp.Storage.set({ preferences: { theme: 'dark', notifications: true } }); */
+OSApp.Storage.set = function( dataToSet, callback ) {
+    callback = callback || function() {};
 
-	callback( true );
+    try {
+        OSApp.Storage.store.setAll(dataToSet);
+        callback(true);
+    } catch (e) {
+        console.error("Failed to set namespaced data in OSApp.Storage:", {e, dataToSet});
+        callback(false, e);
+    }
 };
 
-OSApp.Storage.remove = function( query, callback ) {
-	callback = callback || function() {};
-	var i;
 
-	if ( typeof query === "string" ) {
-		query = [ query ];
-	}
+OSApp.Storage.remove = function( keysToRemove, callback ) {
+    callback = callback || function() {};
 
-	for ( i in query ) {
-		if ( Object.prototype.hasOwnProperty.call(query,  i ) ) {
-			localStorage.removeItem( query[ i ] );
-		}
-	}
+    if ( typeof keysToRemove === "string" ) {
+        keysToRemove = [ keysToRemove ];
+    }
 
-	callback( true );
+    if (Array.isArray(keysToRemove)) {
+        keysToRemove.forEach(function(key) {
+            // Now using the namespaced store's remove method
+            OSApp.Storage.store.remove(key);
+            // If key was 'userToken', store2 would attempt to remove 'OSApp.userToken' from localStorage
+        });
+    }
+
+    callback(true);
 };
 
 OSApp.Storage.loadLocalSettings = function() {
