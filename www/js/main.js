@@ -1,4 +1,4 @@
-/* global $ */
+/* global $, log */
 
 /* OpenSprinkler App
  * Copyright (C) 2015 - present, Samer Albahra. All rights reserved.
@@ -136,6 +136,11 @@ OSApp.currentSession.isControllerConnected = function() {
 
 	return true;
 };
+
+// Set logging level to trace if running locally (app version is 0.0.0.0)
+if ( OSApp.uiState.appVersion === '0.0.0' ) {
+	log.setLevel('trace');
+}
 
 /* Setup DOM handlers and launch app*/
 OSApp.UIDom.launchApp();

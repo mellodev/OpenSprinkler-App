@@ -144,6 +144,9 @@ window.currLocal = true;
 			// Insert store2 localstorage library
 			insertScript( assetLocation + "vendor-js/store2.min.js" );
 
+			// Insert loglevel logging library
+			insertScript( assetLocation + "vendor-js/loglevel.min.js" );
+
 			fetch( assetLocation + "modules.json" )
 				.then( response => response.json() )
 				.then( modules => {

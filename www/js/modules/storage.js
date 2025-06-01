@@ -1,4 +1,4 @@
-/* global store */
+/* global store, log */
 
 /* OpenSprinkler App
  * Copyright (C) 2015 - present, Samer Albahra. All rights reserved.
@@ -33,6 +33,8 @@ OSApp.Storage.get = function( query, callback ) {
         });
     }
 
+	log.debug(`*** Storage.get ${query}`, {keys: query, result: data});
+
 	if ( callback && typeof callback === 'function' ) {
     	callback(data);
 	} else {
@@ -43,6 +45,8 @@ OSApp.Storage.get = function( query, callback ) {
 /* Usage: OSApp.Storage.set({ preferences: { theme: 'dark', notifications: true } }); */
 OSApp.Storage.set = function( dataToSet, callback ) {
     callback = callback || function() {};
+
+	log.debug(`*** Storage.set`, {dataToSet});
 
     try {
         OSApp.Storage.store.setAll(dataToSet);
@@ -68,6 +72,8 @@ OSApp.Storage.remove = function( keysToRemove, callback ) {
             // If key was 'userToken', store2 would attempt to remove 'OSApp.userToken' from localStorage
         });
     }
+
+	log.debug(`*** Storage.remove ${keysToRemove}`);
 
     callback(true);
 };
