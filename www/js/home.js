@@ -141,6 +141,9 @@ window.currLocal = true;
 			// Insert datatables grid library
 			insertScript( assetLocation + "vendor-js/dataTables-2.1.8.min.js" );
 
+			// Insert store2 localstorage library
+			insertScript( assetLocation + "vendor-js/store2.min.js" );
+
 			fetch( assetLocation + "modules.json" )
 				.then( response => response.json() )
 				.then( modules => {

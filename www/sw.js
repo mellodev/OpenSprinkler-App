@@ -69,6 +69,7 @@ cacheFiles = cacheFiles.concat([
 	"/vendor-js/jqm.js",
 	"/vendor-js/dataTables-2.1.8.min.js",
 	"/vendor-js/libs.js",
+	"vendor-js/store2.min.js"
 ]);
 
 // CSS and images
