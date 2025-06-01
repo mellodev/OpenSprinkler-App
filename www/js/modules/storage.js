@@ -18,7 +18,11 @@ var OSApp = OSApp || {};
 OSApp.Storage = OSApp.Storage || {};
 
 // We use store2 to wrap localStorage to provide namespacing (See github issue #214) store2 docs: https://github.com/nbubna/store
-OSApp.Storage.store = store.namespace('OpenSprinkler')
+OSApp.Storage.store = store.namespace('OpenSprinkler2')
+
+console.log("*** CLEARING STORAGES");
+localStorage.clear();
+OSApp.Storage.store.clearAll();
 
 OSApp.Storage.get = function( query, callback ) {
     var data = {};
@@ -79,12 +83,21 @@ OSApp.Storage.remove = function( keysToRemove, callback ) {
 };
 
 OSApp.Storage.migrateLocalStorage = function() {
+	// TODO mellodev remove this
+	localStorage.clear();
+	OSApp.Storage.store.clearAll();
+	return;
+/*
 	// Check if instance is using localStorage rather than store2
 	const keys = [
+		'autoOff',
+		'backup',
 		'cloudDataToken',
 		'current_site',
 		'displayOption',
 		'groupView',
+		'ignoreRemoteFailed',
+		'ignoreUnifiedFirmware',
 		'is24Hour',
 		'isMetric',
 		'lang',
@@ -94,6 +107,7 @@ OSApp.Storage.migrateLocalStorage = function() {
 		'showStationNum',
 		'sites',
 		'sortByStationName',
+		'updateDismiss',
 		'weatherData'
 	];
 
@@ -101,6 +115,10 @@ OSApp.Storage.migrateLocalStorage = function() {
 		try {
 			const oldValueString = localStorage.getItem(storageKey);
 			let valueToStore;
+
+			if (oldValueString === null) {
+				return;
+			}
 
 			try {
 				valueToStore = {[storageKey]: JSON.parse(oldValueString)};
@@ -110,15 +128,15 @@ OSApp.Storage.migrateLocalStorage = function() {
 
 
 			OSApp.Storage.set(valueToStore, function(){
-				console.log(`*** migrateLocalStorage migrated key ${storageKey}`, {oldValueString, valueToStore});
+				log.debug(`*** migrateLocalStorage migrated key ${storageKey} and removed from localStorage`, {oldValueString, valueToStore});
 
-				// localStorage.removeItem(storageKey)
+				localStorage.removeItem(storageKey)
 			})
 		} catch(ex) {
-			console.error("*** OSApp.Storage.migrateLocalStorage uncaught exception", ex);
+			log.error("OSApp.Storage.migrateLocalStorage uncaught exception", ex);
 		}
-	})
-
+	});
+*/
 }
 OSApp.Storage.loadLocalSettings = function() {
 	OSApp.Storage.get( "isMetric", function( data ) {

@@ -276,7 +276,7 @@ OSApp.Sites.displayPage = function() {
 						//OSApp.Firmware.sendToOS( "/cv?pw=&cn=" + data.current_site );
 					}
 
-					OSApp.Storage.set( { "sites":JSON.stringify( sites ) }, () => OSApp.Network.cloudSaveSites() );
+					OSApp.Storage.set( { sites: sites }, () => OSApp.Network.cloudSaveSites() );
 
 					OSApp.Errors.showError( OSApp.Language._( "Site updated successfully" ) );
 
@@ -304,7 +304,7 @@ OSApp.Sites.displayPage = function() {
 						}
 
 						delete sites[ site ];
-						OSApp.Storage.set( { "sites": JSON.stringify( sites ) }, function() {
+						OSApp.Storage.set( { sites: sites }, function() {
 							OSApp.Network.cloudSaveSites();
 							OSApp.Sites.updateSiteList( Object.keys( sites ), data.current_site );
 							if ( $.isEmptyObject( sites ) ) {
@@ -441,6 +441,11 @@ OSApp.Sites.checkConfigured = function( firstLoad ) {
 		var sites = data.sites,
 			current = data.current_site,
 			names;
+
+		// TODO: mellodev this prevents crash when sites is missing from storage
+		if ( !sites ) {
+			return;
+		}
 
 		sites = OSApp.Sites.parseSites( sites );
 
@@ -716,8 +721,8 @@ OSApp.Sites.submitNewSite = function( ssl, useAuth ) {
 
 				$( "#os_name,#os_ip,#os_pw,#os_auth_user,#os_auth_pw,#os_token" ).val( "" );
 				OSApp.Storage.set( {
-					"sites": JSON.stringify( sites ),
-					"current_site": name
+					sites: sites,
+					current_site: name
 				}, function() {
 					OSApp.Network.cloudSaveSites();
 					OSApp.Sites.updateSiteList( Object.keys( sites ), name );
@@ -1377,7 +1382,7 @@ OSApp.Sites.fixPasswordHash = function( current ) {
 					return false;
 				} else {
 					sites[ current ].os_pw = OSApp.currentSession.pass = pw;
-					OSApp.Storage.set( { "sites":JSON.stringify( sites ) }, () => OSApp.Network.cloudSaveSites() );
+					OSApp.Storage.set( { sites: sites }, () => OSApp.Network.cloudSaveSites() );
 				}
 			} );
 		}

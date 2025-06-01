@@ -392,7 +392,7 @@ OSApp.Firmware.checkFirmwareUpdate = function() {
 								popup.find( ".dismiss" ).one( "click", function() {
 
 									// Update the notification dismiss variable with the latest available version
-									OSApp.Storage.set( { updateDismiss:data[ 0 ].tag_name } );
+									OSApp.Storage.set( { updateDismiss: data[ 0 ].tag_name } );
 									popup.popup( "close" );
 									OSApp.Notifications.removeNotification( button );
 									return false;
@@ -450,7 +450,7 @@ OSApp.Firmware.showUnifiedFirmwareNotification = function() {
 					return false;
 				},
 				off: function() {
-					OSApp.Storage.set( { "ignoreUnifiedFirmware": "1" } );
+					OSApp.Storage.set( { ignoreUnifiedFirmware: 1 } );
 					return true;
 				}
 			} );

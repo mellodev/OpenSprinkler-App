@@ -122,6 +122,7 @@ OSApp.currentSession = {
 	weather: undefined, // Current weather observations and future forecast data
 	weatherServerUrl: OSApp.Constants.weather.DEFAULT_WEATHER_SERVER_URL
 };
+
 OSApp.currentSession.isControllerConnected = function() {
 	if ( ( !OSApp.currentSession.ip && !OSApp.currentSession.token ) ||
 		$.isEmptyObject( OSApp.currentSession.controller ) ||
@@ -141,6 +142,9 @@ OSApp.currentSession.isControllerConnected = function() {
 if ( OSApp.uiState.appVersion === '0.0.0' ) {
 	log.setLevel('trace');
 }
+
+/* Attempt to migrate storage */
+OSApp.Storage.migrateLocalStorage()
 
 /* Setup DOM handlers and launch app*/
 OSApp.UIDom.launchApp();

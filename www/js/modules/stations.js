@@ -265,7 +265,7 @@ OSApp.Stations.submitRunonce = function( runonce, interval, repeat ) {
 
 	var submit = function() {
 			$.mobile.loading( "show" );
-			OSApp.Storage.set( { "runonce": JSON.stringify( runonce ) } );
+			OSApp.Storage.set( { runonce: runonce } );
 			let request = "/cr?pw=&t=" + JSON.stringify( runonce );
 			if ( OSApp.Supported.repeatedRunonce() ) {
 				request += "&int=" + interval + "&cnt=" + repeat + "&uwt=" + weather;

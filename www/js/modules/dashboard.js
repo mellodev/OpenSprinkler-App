@@ -359,7 +359,7 @@ OSApp.Dashboard.displayPage = function() {
 
 					// Update the notes section
 					sites[ currentSite ].notes[ sid ] = select.find( "#stn-notes" ).val();
-					OSApp.Storage.set( { "sites": JSON.stringify( sites ) }, () => OSApp.Network.cloudSaveSites() );
+					OSApp.Storage.set( { sites: sites }, () => OSApp.Network.cloudSaveSites() );
 
 					submitStations( sid );
 					select.popup( "destroy" ).remove();
@@ -561,7 +561,7 @@ OSApp.Dashboard.displayPage = function() {
 
 				OSApp.UIDom.getPicture( function( image ) {
 					sites[ currentSite ].images[ sid ] = image;
-					OSApp.Storage.set( { "sites":JSON.stringify( sites ) }, () => OSApp.Network.cloudSaveSites() );
+					OSApp.Storage.set( { sites: sites }, () => OSApp.Network.cloudSaveSites() );
 					updateContent();
 
 					button.innerHTML =  OSApp.Language._( "Change" ) + " " + OSApp.Language._( "Image" );
@@ -1095,7 +1095,7 @@ OSApp.Dashboard.displayPage = function() {
 
 								// Save run time for this station
 								sites[ currentSite ].lastRunTime[ sid ] = duration;
-								OSApp.Storage.set( { "sites": JSON.stringify( sites ) }, () => OSApp.Network.cloudSaveSites() );
+								OSApp.Storage.set( { sites: sites }, () => OSApp.Network.cloudSaveSites() );
 							} );
 						}
 					} );
@@ -1131,13 +1131,13 @@ OSApp.Dashboard.displayPage = function() {
 				if ( hasImage ) {
 					OSApp.UIDom.areYouSure( OSApp.Language._( "Do you want to delete the current image?" ), "", function() {
 						delete sites[ currentSite ].images[ id ];
-						OSApp.Storage.set( { "sites":JSON.stringify( sites ) }, () => OSApp.Network.cloudSaveSites() );
+						OSApp.Storage.set( { sites: sites}, () => OSApp.Network.cloudSaveSites() );
 						updateContent();
 					} );
 				} else {
 					OSApp.UIDom.getPicture( function( image ) {
 						sites[ currentSite ].images[ id ] = image;
-						OSApp.Storage.set( { "sites":JSON.stringify( sites ) }, () => OSApp.Network.cloudSaveSites() );
+						OSApp.Storage.set( { sites: sites }, () => OSApp.Network.cloudSaveSites() );
 						updateContent();
 					} );
 				}

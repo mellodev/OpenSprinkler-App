@@ -18,12 +18,12 @@ describe("Initial Definition Check", function () {
 		assert.doesNotThrow(function () {
 			OSApp.Storage.set({
 				"testkey": "helloworld",
-				"sites": JSON.stringify({
+				"sites": {
 					"Test": {
 						"os_ip": "127.0.0.1:8080",
 						"os_pw": "opendoor"
 					}
-				}),
+				},
 				"current_site": "Test"
 			}, function (result) {
 				result === true ? done() : done(new Error("Failed to set key/value pairs", result.Error));

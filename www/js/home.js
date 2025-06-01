@@ -243,9 +243,8 @@ window.currLocal = true;
 				body.html( "<div class='spinner'><h1>Loading</h1></div>" );
 				document.title = "Loading...";
 
-				// TODO mellodev verify this works properly
 				// Inject site information to storage so Application loads current device
-				OSApp.Storage.set( "sites", JSON.stringify( sites ) );
+				OSApp.Storage.set( "sites", sites )
 				OSApp.Storage.set( "current_site", currentSite );
 				finishInit();
 			},
