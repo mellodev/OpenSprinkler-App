@@ -187,8 +187,7 @@ OSApp.Options.showOptions = function( expandItem ) {
 						OSApp.Storage.set( { "is24Hour": OSApp.uiState.is24Hour } );
 						return true;
 					case "groupView":
-						OSApp.uiState.groupView = $item.is( ":checked" );
-						OSApp.Storage.set( { "groupView": OSApp.uiState.groupView } );
+						OSApp.Storage.set( { "groupView": $item.is( ":checked" ) } );
 						return true;
 					case "sortByStationName":
 						OSApp.uiState.sortByStationName = $item.is( ":checked" );
@@ -381,7 +380,7 @@ OSApp.Options.showOptions = function( expandItem ) {
 
        list += "<div data-role='controlgroup' data-type='horizontal' style='text-align:center'>";
                if ( OSApp.Supported.groups() ) {
-                       list += "<label for='groupView'><input data-mini='true' class='noselect' id='groupView' type='checkbox' " + ( OSApp.uiState.groupView ? "checked='checked'" : "" ) + ">" +
+                       list += "<label for='groupView'><input data-mini='true' class='noselect' id='groupView' type='checkbox' " + ( OSApp.Storage.getItem( "groupView" ) ? "checked='checked'" : "" ) + ">" +
                        OSApp.Language._( "Order Stations by Groups" ) + "</label>";
                }
 
@@ -390,10 +389,10 @@ OSApp.Options.showOptions = function( expandItem ) {
        list += "</div>";
 
        list += "<div data-role='controlgroup' data-type='horizontal' style='text-align:center'>";
-               list += "<label for='showDisabled'><input data-mini='true' class='noselect' id='showDisabled' type='checkbox' " + ( ( localStorage.showDisabled === "true" ) ? "checked='checked'" : "" ) + ">" +
+               list += "<label for='showDisabled'><input data-mini='true' class='noselect' id='showDisabled' type='checkbox' " + ( ( OSApp.Storage.getItem( "showDisabled" ) === true ) ? "checked='checked'" : "" ) + ">" +
                        OSApp.Language._( "Show Disabled" ) + "</label>";
 
-               list += "<label for='showStationNum'><input data-mini='true' class='noselect' id='showStationNum' type='checkbox' " + ( ( localStorage.showStationNum === "true" ) ? "checked='checked'" : "" ) + ">" +
+               list += "<label for='showStationNum'><input data-mini='true' class='noselect' id='showStationNum' type='checkbox' " + ( ( OSApp.Storage.getItem( "showStationNum" ) === true ) ? "checked='checked'" : "" ) + ">" +
                        OSApp.Language._( "Show Station Number" ) + "</label>";
        list += "</div>";
 
@@ -982,7 +981,6 @@ OSApp.Options.showOptions = function( expandItem ) {
         } );
 
         page.find( "#groupView" ).on( "change", function() {
-                OSApp.uiState.groupView = this.checked;
                 OSApp.Storage.set( { groupView: this.checked } );
                 return false;
         } );

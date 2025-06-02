@@ -34,7 +34,16 @@ OSApp.Storage.get = function( query, callback ) {
         });
     }
 
-    callback(data);
+	if ( typeof callback === "function" ) {
+		callback(data);
+	} else {
+		return data;
+	}
+};
+
+/* Returns a single value from storage without a callback*/
+OSApp.Storage.getItem = function( key ) {
+	return OSApp.Storage.store.get(key);
 };
 
 /* Usage: OSApp.Storage.set({ preferences: { theme: 'dark', notifications: true } }); */
@@ -96,17 +105,7 @@ OSApp.Storage.loadLocalSettings = function() {
 			default:
 		}
 	} );
-	OSApp.Storage.get( "groupView", function( data ) {
-		switch ( data.groupView ) {
-			case "true":
-				OSApp.uiState.groupView = true;
-				break;
-			case "false":
-				OSApp.uiState.groupView = false;
-				break;
-			default:
-		}
-	} );
+
 	OSApp.Storage.get( "sortByStationName", function( data ) {
 		switch ( data.sortByStationName ) {
 			case "true":

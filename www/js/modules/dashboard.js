@@ -879,12 +879,12 @@ OSApp.Dashboard.displayPage = function() {
 		reorderCards = function() {
 			var cardHolder = page.find( "#os-stations-list" ),
 				cardList = cardHolder.children(),
-				compareCards = OSApp.uiState.groupView ? compareCardsGroupView : compareCardsStandardView;
+				compareCards = OSApp.Storage.getItem( "groupView" ) ? compareCardsGroupView : compareCardsStandardView;
 
 			// Sort stations
 			cardList.sort( compareCards ).detach().appendTo( cardHolder );
 
-			if ( OSApp.Supported.groups() && OSApp.uiState.groupView ) {
+			if ( OSApp.Supported.groups() && OSApp.Storage.getItem( "groupView" ) ) {
 				updateGroupView( cardHolder, cardList );
 			} else {
 				updateStandardView( cardHolder, cardList );
